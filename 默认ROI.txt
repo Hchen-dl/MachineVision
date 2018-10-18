@@ -1,0 +1,10 @@
+VideoCapture 类取出的frame默认大小为640*480；
+
+解决方案：
+cap.set(CV_CAP_PROP_WIDTH,DOUBLE VALUE);
+
+新的问题：
+设置高度和宽度之后发现其余参数也需要设置，否则图像为黑白，翻转。
+其参数需要设置。
+解决：
+根据其自带软件上参数对HUE,SATURA,BRIGHT,CONTRAST等进行设置。
