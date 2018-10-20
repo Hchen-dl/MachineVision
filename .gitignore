@@ -1,0 +1,4 @@
+*.ipcb
+*ipch
+*.pdb
+*.opendb

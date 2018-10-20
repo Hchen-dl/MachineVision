@@ -1,7 +1,13 @@
 ﻿#include "CameraParams.h"
+#include "InverseTransform.h"
 #include <iostream>
 using namespace std;
-vector<Point2f> CenterInitial();
+vector<Point2f> DstCenterInitial();
+vector<Point2f> ImageCentersInitial(Mat wrapSrc);//重心法
+vector<Point2f> ImageCentersInitial_Insect(Mat wrapSrc);//交点
+vector<Point2f>ImgPoints;
+void on_mouse(int event, int x, int y, int flags, void *ustc);
+
 int CameraCalibration()
 {
 	string src_path = "C:\\Users\\ahaiya\\Documents\\FirstYear\\MachineVision\\SampleImages\\crops002.jpg";
@@ -191,60 +197,17 @@ void CameraParams::GetParams()
 
 Mat CameraParams::WrapMatrix()
 {
-	vector<Point2f> dstPoints = CenterInitial();
-	string srcImagePath = "CalibrationImages\\p2.jpg";
+	string srcImagePath = "CalibrationImages\\groud.jpg";
 	Mat wrapSrc = imread(srcImagePath);
-	Mat grayImg;
-	cvtColor(wrapSrc, grayImg, COLOR_BGR2GRAY);
-	threshold(grayImg,grayImg,80,255,0);
-
-	vector<vector<Point>>contours;
-	vector<Vec4i>hierarchy;
-	findContours(grayImg, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
-	int i = 0;
-	int count = 0;
-	Point pt[8];//假设有三个连通区域
-	Moments moment;//矩
-	vector<Point>Center;//创建一个向量保存重心坐标
-	for (; i >= 0; i = hierarchy[i][0])//读取每一个轮廓求取重心
-	{
-		Mat temp(contours.at(i));
-		Scalar color(0, 0, 255);
-		moment = moments(temp, false);
-		if (moment.m00 != 0)//除数不能为0
-		{
-			pt[i].x = cvRound(moment.m10 / moment.m00);//计算重心横坐标
-			pt[i].y = cvRound(moment.m01 / moment.m00);//计算重心纵坐标
-
-		}
-		Point p = Point(pt[i].x, pt[i].y);//重心坐标
-		//circle(White, p, 1, color, 1, 8);//原图画出重心坐标
-		count++;//重心点数或者是连通区域数
-		Center.push_back(p);//将重心坐标保存到Center向量中
-		//circle(grayImg, p, 3, Scalar(0, 255/(i+1), 0), -1, 8, 0);
-	}
-	vector<uchar> m;
-	Mat Homography = findHomography(Center, dstPoints, CV_RANSAC, 3, m);//
-	//namedWindow("grayImg", CV_WINDOW_KEEPRATIO);
-	//imshow("grayImg", grayImg);
-	//cvtColor(input_image_, grayImg, COLOR_BGR2GRAY);
-	//vector<Point2d> dstPoints= CenterInitial();
-	//vector<Point2d> centers;
-	//vector<Vec3f> circles;//保存矢量  
-	//HoughCircles(grayImg, circles, CV_HOUGH_GRADIENT, 1, 1, 100, 50, 0, 0);
-	//for (size_t i = 0; i < circles.size(); i++)
-	//{
-	//	Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
-	//	centers.push_back(center);
-	//	int radius = cvRound(circles[i][2]);
-	//	//绘制圆心  
-	//	circle(grayImg, center, 3, Scalar(0, 255, 0), -1, 8, 0);
-	//	//绘制圆轮廓  
-	//	circle(grayImg, center, radius, Scalar(155, 50, 255), 3, 8, 0);
-	//	//Scalar(55,100,195)参数中G、B、R颜色值的数值，得到想要的颜色  
-	//}
-	//Mat dstImg;
-	//warpPerspective(wrapSrc, dstImg, Homography,Size(wrapSrc.rows, wrapSrc.cols));
+	vector<Point2f> dstPoints = DstCenterInitial();
+	vector<Point2f> srcPoints = ImageCentersInitial_Insect(wrapSrc);
+	//Mat Homography = findFundamentalMat(srcPoints, dstPoints, FM_RANSAC, 3, 0.99);//7个及以上点
+	Mat Homography = getPerspectiveTransform(srcPoints,dstPoints);
+	//
+ 	Mat dstImg;
+	////Rect roi_h = Rect(0, 0, 3, 2);
+	////Homography = Homography(roi_h);
+	//warpPerspective(wrapSrc, dstImg, Homography,Size(300, 260), CV_INTER_LINEAR);
 	//namedWindow("dstImg", CV_WINDOW_KEEPRATIO);
 	//imshow("dstImg", dstImg);
 	//namedWindow("wrapSrc", CV_WINDOW_KEEPRATIO);
@@ -262,31 +225,84 @@ Mat CameraParams::WrapMatrix()
 	//vector<Point2d>actual_line;
 	//perspectiveTransform(Center, actual_line, Homography);
 
-	//imshow("gra", grayImg);
 	return Homography;
+	//return wrapSrc;
 }
-vector<Point2f> CenterInitial()
+vector<Point2f> DstCenterInitial()
 {
-
 	vector<Point2f> Centers;
-	//原始
-	//Centers.push_back(Point2f(43.06, 185.04));
-	//Centers.push_back(Point2f(22.63, 145.90));
-	//Centers.push_back(Point2f(17.96, 204.32));
-	//Centers.push_back(Point2f(0, 170.49));
-	//Centers.push_back(Point2f(-12.55, 132.77));
-	//Centers.push_back(Point2f(-28.77, 220.23));// 
-	//Centers.push_back(Point2f(-35.18, 157.37));
-	//Centers.push_back(Point2f(-36.31, 184.23));	//
-	//修改+40后乘以k
-	int k = 1;
-	Centers.push_back(Point2f(k*(43.06+40), k*185.04));
-	Centers.push_back(Point2f(k*(22.63+40), k*145.90));
-	Centers.push_back(Point2f(k*(17.96+40), k*204.32));
-	Centers.push_back(Point2f(k*(40+0), k*170.49));
-	Centers.push_back(Point2f(k*(40-12.55), k*132.77));
-	Centers.push_back(Point2f(k*(40-28.77), k*220.23));// 
-	Centers.push_back(Point2f(k*(40-35.18), k*157.37));
-	Centers.push_back(Point2f(k*(40-36.31), k*184.23));	//
+	//修改+b后乘以k
+	int k = 1, b = 40,dy=0;
+	//Centers.push_back(Point2f(k*(43.06 + b), k*(dy+185.04)));
+	//Centers.push_back(Point2f(k*(22.63 + b), k*(dy+145.90)));
+	//Centers.push_back(Point2f(k*(17.96 + b), k*(dy+204.32)));
+	//Centers.push_back(Point2f(k*(b + 0), k*(dy-170.49)));
+	//Centers.push_back(Point2f(k*(b - 12.55), k*(dy+132.77)));
+	//Centers.push_back(Point2f(k*(b - 28.77), k*(dy+220.23)));// 
+	//Centers.push_back(Point2f(k*(b - 35.18), k*(dy+157.37)));
+	//Centers.push_back(Point2f(k*(b - 36.31), k*(dy + 184.23)));	//
+	//Centers.push_back(Point2f(120, 10));	//
+	Centers.push_back(Point2f(180,70));	//
+	Centers.push_back(Point2f(240, 70));	//
+	//Centers.push_back(Point2f(60, 130));	//
+	//Centers.push_back(Point2f(120, 130));	//
+	Centers.push_back(Point2f(180, 190));	//
+	Centers.push_back(Point2f(240, 190));	//
+	//Centers.push_back(Point2f(60, 250));	//
 	return Centers;
+}
+
+vector<Point2f> ImageCentersInitial(Mat wrapSrc)
+{
+	Mat grayImg;
+	cvtColor(wrapSrc, grayImg, COLOR_BGR2GRAY);
+	threshold(grayImg, grayImg, 80, 255, 0);
+	vector<vector<Point>>contours;
+	vector<Vec4i>hierarchy;
+	findContours(grayImg, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+	int i = 0;
+	int count = 0;
+	Point pt[8];//假设有8个连通区域
+	Moments moment;//矩
+	vector<Point2f>Center;//创建一个向量保存重心坐标
+	for (; i >= 0; i = hierarchy[i][0])//读取每一个轮廓求取重心
+	{
+		Mat temp(contours.at(i));
+		Scalar color(0, 0, 255);
+		moment = moments(temp, false);
+		if (moment.m00 != 0)//除数不能为0
+		{
+			pt[i].x = cvRound(moment.m10 / moment.m00);//计算重心横坐标
+			pt[i].y = cvRound(moment.m01 / moment.m00);//计算重心纵坐标
+
+		}
+		Point p = Point(pt[i].x, pt[i].y);//重心坐标
+		//circle(White, p, 1, color, 1, 8);//原图画出重心坐标
+		count++;//重心点数或者是连通区域数
+		Center.push_back(p);//将重心坐标保存到Center向量中
+		//circle(grayImg, p, 3, Scalar(0, 255/(i+1), 0), -1, 8, 0);
+	}
+	return Center;
+}
+
+vector<Point2f> ImageCentersInitial_Insect(Mat wrapSrc)
+{
+	namedWindow("img", CV_WINDOW_KEEPRATIO);
+	while (1) {
+		setMouseCallback("img", on_mouse, 0);//调用回调函数
+		imshow("img", wrapSrc);
+		if (waitKey(100) >= 0)break;
+	}
+	return ImgPoints;
+}
+void on_mouse(int event, int x, int y, int flags, void *ustc)
+//event鼠标事件代号，x,y鼠标坐标，flags拖拽和键盘操作的代号    
+{
+	Mat& image = *(cv::Mat*) ustc;
+	char temp[16];
+	if (event == 1)
+	{
+		sprintf_s(temp, "(%d,%d)", x, y);
+		ImgPoints.push_back(Point2f(x,y));
+	}
 }

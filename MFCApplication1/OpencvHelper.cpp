@@ -396,18 +396,20 @@ Result OpencvHelper::GetResult(vector<Point2f>line)
 	Result result;
 	double distance0 = src_image_.cols/2;
 	double heading_angle = 90;
-	vector<Point2f> actual_line;
-	actual_line = line;
+	vector<Point2f> actual_line=line;
+	//actual_line = line;
 	//actual_line = line;//
+	
 	//vector<Point2f> test;
-	//test.push_back(Point2f(0, src_image_.cols/2));
-	//test.push_back(Point2f(220, src_image_.cols / 2));
+	//test.push_back(Point2f(1010,116));
+	//test.push_back(Point2f(1074,277));
+	//line = test;
 	//perspectiveTransform(line, actual_line, homography_);
 	//perspectiveTransform(test, actual_line, homography_);
-	//double x1 = line[0].x * homography_.at<double>(0, 0) + line[0].y * homography_.at<double>(0, 1) + homography_.at<double>(0, 2);
-	//double y1 = line[0].x * homography_.at<double>(1, 0) + line[0].y * homography_.at<double>(1, 1) + homography_.at<double>(1, 2);
-	//double x2 = line[0].x * homography_.at<double>(0, 0) + line[1].y * homography_.at<double>(0, 1) + homography_.at<double>(0, 2);
-	//double y2 = line[1].x * homography_.at<double>(1, 0) + line[1].y * homography_.at<double>(1, 1) + homography_.at<double>(1, 2);
+	//double x1 = line[0].x * homography_.at<double>(0, 0) + line[0].y * homography_.at<double>(1, 0) + homography_.at<double>(2,0);
+	//double y1 = line[0].x * homography_.at<double>(1, 0) + line[0].y * homography_.at<double>(1, 1) + homography_.at<double>(2,1);
+	//double x2 = line[0].x * homography_.at<double>(0, 0) + line[1].y * homography_.at<double>(1, 0) + homography_.at<double>(2,0);
+	//double y2 = line[1].x * homography_.at<double>(1, 0) + line[1].y * homography_.at<double>(1, 1) + homography_.at<double>(2,1);
 	//actual_line.push_back(Point2f(x1, y1));
 	//actual_line.push_back(Point2f(x2, y2));
 	if ((actual_line[0].x - actual_line[1].x) == 0)
@@ -420,17 +422,20 @@ Result OpencvHelper::GetResult(vector<Point2f>line)
 			result.angle = 180*(atan((actual_line[0].y- actual_line[1].y)/ (actual_line[0].x - actual_line[1].x)))/PI;
 			if (result.angle < 0)
 			{
-				result.angle = -(result.angle + 90);
+				result.angle = result.angle + 90;
 			}
-			else result.angle = 90- result.angle;
-			result.offset =(actual_line[0].x+(src_image_.rows-actual_line[0].y)*(actual_line[0].x-actual_line[1].x)/(actual_line[0].y-actual_line[1].y)-distance0)/10;
+			else result.angle = result.angle-90;
+			result.offset =(actual_line[0].x+(src_image_.rows-actual_line[0].y)*(actual_line[0].x-actual_line[1].x)/(actual_line[0].y-actual_line[1].y)-distance0);
+			int line_offset =120 ;
+			if (result.offset > 0)result.offset= result.offset-120;
+			else result.offset= result.offset+120;
 			//result.offset =(actual_line[0].y+(src_image_.rows-actual_line[0].x)*(actual_line[0].y-actual_line[1].y)/(actual_line[0].x-actual_line[1].x)-distance0)/10;
 		}
 	//if ()
 	//{
 
 	//}
-	return result;
+	return result;//angle and reset :向右转方向盘则为正，车辆在路径左边为正；
 };
 
 Vec4i OpencvHelper::LengthenLine(Vec4i line, Mat draw)
