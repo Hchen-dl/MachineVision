@@ -90,7 +90,7 @@ vector<Point2f> OpencvHelper::GetLine_Tradition()
 	vector<cv::Vec4f> lines;
 	vector<Point2d> line_center;//直线中心，x为left，y为right。
 	int left, right;
-	int crop_width = 10;
+	int crop_width = 4;
 	Mat points = Mat::zeros(thresh_image_.rows, thresh_image_.cols, CV_8UC1);
 	//求取中点
 	for (int r=0;r<thresh_image_.rows;r=r+1)
@@ -109,7 +109,7 @@ vector<Point2f> OpencvHelper::GetLine_Tradition()
 	}
 	namedWindow("points", CV_WINDOW_KEEPRATIO);
 	imshow("points", points);
-	cv::HoughLinesP(points, lines, 1, 3.14159/180, 30,30,30);//HoughLines的lines是vector2f.参数6为threshold.
+	cv::HoughLinesP(points, lines, 1, 3.14159/180, 5,20,100);//HoughLines的lines是vector2f.参数6为threshold.
 
 	int deta=points.cols;
 	int id=0;
@@ -344,8 +344,8 @@ void OpencvHelper::EXGCalcultate()
 	grey_image_ = channels[0] + channels[1] + channels[2];
 	grey_image_.convertTo(grey_image_, CV_8UC1);
 	ROI_ = Rect(30, 30, grey_image_.cols -30, grey_image_.rows-30);
-	//namedWindow("exg", CV_WINDOW_KEEPRATIO);
-	//imshow("exg", grey_image_);
+	namedWindow("exg", CV_WINDOW_KEEPRATIO);
+	imshow("exg", grey_image_);
 	//("exg", exgImage.cols / 6, exgImage.rows / 6);
 }
 void OpencvHelper::GreyTransform()
@@ -386,7 +386,8 @@ void OpencvHelper::GreyTransform()
 void OpencvHelper::OTSUBinarize()
 {
 	threshold(grey_image_, thresh_image_, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
-	
+	namedWindow("thr", CV_WINDOW_KEEPRATIO);
+	imshow("thr", thresh_image_);
 }
 Result OpencvHelper::GetResult(vector<Point2f>line)
 {
@@ -427,8 +428,8 @@ Result OpencvHelper::GetResult(vector<Point2f>line)
 			else result.angle = result.angle-90;
 			result.offset =(actual_line[0].x+(src_image_.rows-actual_line[0].y)*(actual_line[0].x-actual_line[1].x)/(actual_line[0].y-actual_line[1].y)-distance0);
 			int line_offset =120 ;
-			if (result.offset > 0)result.offset= result.offset-120;
-			else result.offset= result.offset+120;
+			if (result.offset > 0)result.offset= result.offset- line_offset;
+			else result.offset= result.offset+ line_offset;
 			//result.offset =(actual_line[0].y+(src_image_.rows-actual_line[0].x)*(actual_line[0].y-actual_line[1].y)/(actual_line[0].x-actual_line[1].x)-distance0)/10;
 		}
 	//if ()
